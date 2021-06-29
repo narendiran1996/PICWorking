@@ -1,0 +1,38 @@
+#!/bin/bash
+
+inputFileGiven=false
+while getopts 'i:' OPTION; do
+  case "$OPTION" in
+    i)
+      FileName="$OPTARG"
+      inputFileGiven=true
+      # echo "file name is $FileName"
+      ;;
+
+    ?)
+      echo "Usage: $(basename $0) -i fileName(with extention)"
+      exit 1
+      ;;
+  esac
+done
+
+if ! $inputFileGiven
+then
+    echo "$(basename $0) [-i fileName(with extention)] is Mandatory" >&2
+    exit 1
+fi
+
+xc8-cc -mcpu=18f452 $FileName
+
+rm -rf startup.*
+rm -rf *.o
+rm -rf *.cod
+rm -rf *.lst
+rm -rf *.hxl
+rm -rf *.elf
+rm -rf *.d
+rm -rf *.cmf
+rm -rf *.p1
+rm -rf *.sdb
+rm -rf *.s
+rm -rf *.sym
