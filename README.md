@@ -14,4 +14,6 @@ Learning PIC18F452 Microcontroller for usage of Advanced Peripherals  (mainly US
 3) Led Dice
 4) Blink Led Using Timer Interrupts
 5) Multiplexing Between Two Seven Segment Display
-    - Without Time (only static display of numbers)
+    - Without Interrupt (only static display of numbers)
+    - With Intterupt
+6) LCD Display

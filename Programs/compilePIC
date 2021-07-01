@@ -22,7 +22,9 @@ then
     exit 1
 fi
 
-xc8-cc -mcpu=18f452 -mext=cci $FileName
+# mext for interrupt not usre
+# mwarn=-2 to suprress function not used warning
+xc8-cc -mcpu=18f452 -mext=cci -mwarn=-2 $FileName
 
 rm -rf startup.*
 rm -rf *.o
