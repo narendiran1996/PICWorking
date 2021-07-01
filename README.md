@@ -17,3 +17,4 @@ Learning PIC18F452 Microcontroller for usage of Advanced Peripherals  (mainly US
     - Without Interrupt (only static display of numbers)
     - With Intterupt
 6) LCD Display
+7) Voltmeter
