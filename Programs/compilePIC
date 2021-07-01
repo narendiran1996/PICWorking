@@ -22,7 +22,7 @@ then
     exit 1
 fi
 
-xc8-cc -mcpu=18f452 $FileName
+xc8-cc -mcpu=18f452 -mext=cci $FileName
 
 rm -rf startup.*
 rm -rf *.o
