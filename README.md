@@ -18,3 +18,4 @@ Learning PIC18F452 Microcontroller for usage of Advanced Peripherals  (mainly US
     - With Intterupt
 6) LCD Display
 7) Voltmeter
+8) Calculator

@@ -117,6 +117,19 @@ void LCD_Init()
     LATD = LATD & 0xFC;
     LCD_sequence();
 }
+void LCD_set_cursor(unsigned char r, unsigned char c)
+{
+    // r and c starts from 1
+    if (r == 1)
+    {
+        LCD_send_cmd(0x80 + c - 1);
+    }
+    else if (r == 2)
+    {
+        LCD_send_cmd(0xC0 + c - 1);
+    }
+}
+
 void LCD_clear(void)
 {
     // 0x01 for clearing display
@@ -320,18 +333,33 @@ char *itoa(int value, char *result, int base)
     }
     return result;
 }
-void LCD_print_num(int num, int base)
+void LCD_print_int(int num, int base)
 {
     char buff[16];
     itoa(num, buff, base);
     LCD_send_string(buff);
+}
+void LCD_print_float(float num)
+{
+    int decimal = (int)num;
+    float fraction1 = (num - decimal) * 1000;
+    int fraction = (int)fraction1;
+    if (fraction < 0)
+        fraction = -1 * fraction;
+    char buff1[16];
+    itoa(decimal, buff1, 10);
+    LCD_send_string(buff1);
+    LCD_send_data('.');
+    char buff2[16];
+    itoa(fraction, buff2, 10);
+    LCD_send_string(buff2);
 }
 
 void main()
 {
     LCD_Init();
     LCD_send_string("HI !");
-    LCD_print_num(47, 10);
+    LCD_print_int(47, 10);
     while (1)
     {
     }

@@ -11,11 +11,11 @@
 
 #include <xc.h>
 
-#define set_En LATD |= (1 << 1)
-#define clear_En LATD &= ~(1 << 1)
+#define set_En LATC |= (1 << 5)
+#define clear_En LATC &= ~(1 << 5)
 
-#define set_RS LATD |= (1 << 0)
-#define clear_RS LATD &= ~(1 << 0)
+#define set_RS LATC |= (1 << 4)
+#define clear_RS LATC &= ~(1 << 4)
 
 #define LCD_set_MSB(val_) LATC = (LATC & 0xF0) | ((val_ & 0xF0) >> 4)
 #define LCD_set_LSB(val_) LATC = (LATC & 0xF0) | ((val_ & 0x0F) >> 0)
@@ -30,7 +30,7 @@ void LCD_custom_delay(unsigned char del_val)
         }
     }
 }
-void LCD_send_cmd(unsigned char cmd_)
+void LCD_send_cmd(uint8_t cmd_)
 {
     LCD_set_MSB(cmd_);
     clear_RS;
@@ -44,7 +44,7 @@ void LCD_send_cmd(unsigned char cmd_)
     LCD_custom_delay(1);
     clear_En;
 }
-void LCD_send_data(unsigned char data_)
+void LCD_send_data(uint8_t data_)
 {
     LCD_set_MSB(data_);
     set_RS;
@@ -110,22 +110,10 @@ void LCD_sequence(void)
 
 void LCD_Init()
 {
-    TRISC = TRISC & 0xF0;
-    TRISD = TRISD & 0xFC;
+    TRISC = TRISC & 0xC0;
 
-    LATC = LATC & 0xF0;
-    LATD = LATD & 0xFC;
+    LATC = LATC & 0xC0;
     LCD_sequence();
-}
-void LCD_clear(void)
-{
-    // 0x01 for clearing display
-    LCD_send_cmd(0x01);
-}
-void LCD_home(void)
-{
-    // 0000_001x for moving cursor to inital position and moving DRAM address to 00H
-    LCD_send_cmd(0x02);
 }
 void LCD_set_cursor(unsigned char r, unsigned char c)
 {
@@ -140,6 +128,16 @@ void LCD_set_cursor(unsigned char r, unsigned char c)
     }
 }
 
+void LCD_clear(void)
+{
+    // 0x01 for clearing display
+    LCD_send_cmd(0x01);
+}
+void LCD_home(void)
+{
+    // 0000_001x for moving cursor to inital position and moving DRAM address to 00H
+    LCD_send_cmd(0x02);
+}
 void LCD_print_left(void)
 {
     // moving left
@@ -339,93 +337,293 @@ void LCD_print_int(int num, int base)
     itoa(num, buff, base);
     LCD_send_string(buff);
 }
-
-int ADC_Read(unsigned char channelNo)
+void LCD_print_float(float num)
 {
-    // ADC result's MSB are zeros
-    ADCON1 |= (1 << 7);
+    int decimal = (int)num;
+    float fraction1 = (num - decimal) * 1000;
+    int fraction = (int)fraction1;
+    if (fraction < 0)
+        fraction = -1 * fraction;
+    char buff1[16];
+    itoa(decimal, buff1, 10);
+    LCD_send_string(buff1);
+    LCD_send_data('.');
+    char buff2[16];
+    itoa(fraction, buff2, 10);
+    LCD_send_string(buff2);
+}
 
-    // ADC port config - All ports as analog
-    ADCON1 = (ADCON1 & 0xF0) | (0x00);
+void KeyPad_Init()
+{
+    TRISD = 0xF0;
+}
+unsigned char readKeyPad()
+{
+    unsigned char val = 0;
 
-    // ADC channel 0 - AN0
-    ADCON0 = (ADCON0 & 0xC7) | (unsigned char)(channelNo << 3);
+    LATD = (LATD & 0xF0) | 0x01;
+    val = (PORTD & 0xF0) >> 4;
+    if (val != 0)
+        return 10 + val;
 
-    // ADC clock - from RC internal oscillator
-    ADCON1 |= (1 << 6);
-    ADCON0 |= (1 << 7);
-    ADCON0 |= (1 << 6);
+    LATD = (LATD & 0xF0) | 0x02;
+    val = (PORTD & 0xF0) >> 4;
+    if (val != 0)
+        return 20 + val;
 
-    ADCON0 |= (1 << 0); // ADC On
+    LATD = (LATD & 0xF0) | 0x04;
+    val = (PORTD & 0xF0) >> 4;
+    if (val != 0)
+        return 30 + val;
 
-    // waiting
-    for (unsigned char j = 0; j < 10; j++)
-        NOP();
+    LATD = (LATD & 0xF0) | 0x08;
+    val = (PORTD & 0xF0) >> 4;
+    if (val != 0)
+        return 40 + val;
 
-    ADCON0 |= (1 << 2); // start converstion
-
-    while ((ADCON0 & (1 << 2)) != 0)
+    LATD = 0x00;
+    return val;
+}
+int no1 = 0, no2 = 0;
+int result = 0;
+unsigned char whichNo = 1;
+unsigned char op = 0;
+void CalculatorProcess()
+{
+    __delay_ms(180);
+    unsigned char val = readKeyPad();
+    switch (val)
     {
+    case 0:
+    {
+        break;
     }
-    return (ADRESH << 8) + ADRESL;
-}
-
-void ADC_Interrupt_init(unsigned char channelNo)
-{
-    // ADC result's MSB are zeros
-    ADCON1 |= (1 << 7);
-
-    // ADC port config - All ports as analog
-    ADCON1 = (ADCON1 & 0xF0) | (0x00);
-
-    // ADC channel 0 - AN0
-    ADCON0 = (ADCON0 & 0xC7) | (unsigned char)(channelNo << 3);
-
-    // ADC clock - from RC internal oscillator
-    ADCON1 |= (1 << 6);
-    ADCON0 |= (1 << 7);
-    ADCON0 |= (1 << 6);
-
-    ADCON0 |= (1 << 0); // ADC On
-
-    // interrupts
-    PIR1 &= ~(1 << 6);  // clear ADC IF
-    PIE1 |= (1 << 6);   // set ADC IE
-    INTCON |= (1 << 7); // set Global Interrupt
-    INTCON |= (1 << 6); // set peripherals Interrupt
-
-    // waiting
-    for (unsigned char j = 0; j < 10; j++)
-        NOP();
-
-    ADCON0 |= (1 << 2); // start converstion
-}
-int adcVal = 0;
-void __interrupt() ADC0Interrupt(void)
-{
-    // check adc interrupt flag
-    if ((PIR1 & (1 << 6)) != 0)
+    case 11:
     {
-        adcVal = (ADRESH << 8) + ADRESL;
-        adcVal = (adcVal * 5000) >> 10; // mv
-        PIR1 &= ~(1 << 6);              // clear ADC IF
-        ADCON0 |= (1 << 2);             // start converstion
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 7;
+        else
+            no2 = (no2 * 10) + 7;
+        LCD_send_data('7');
+        break;
+    }
+    case 12:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 8;
+        else
+            no2 = (no2 * 10) + 8;
+        LCD_send_data('8');
+        break;
+    }
+    case 14:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 9;
+        else
+            no2 = (no2 * 10) + 9;
+        LCD_send_data('9');
+        break;
+    }
+    case 18:
+    {
+        if (whichNo == 1)
+        {
+            whichNo = 2;
+            op = 4;
+            LCD_send_data('/');
+        }
+        else if (whichNo == 2)
+        {
+            whichNo = 1;
+            no1 = 0, no2 = 0;
+            LCD_clear();
+            LCD_set_cursor(1, 1);
+            LCD_send_string("Error");
+        }
+        break;
+    }
+    case 21:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 4;
+        else
+            no2 = (no2 * 10) + 4;
+        LCD_send_data('4');
+        break;
+    }
+    case 22:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 5;
+        else
+            no2 = (no2 * 10) + 5;
+        LCD_send_data('5');
+        break;
+    }
+    case 24:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 6;
+        else
+            no2 = (no2 * 10) + 6;
+        LCD_send_data('6');
+        break;
+    }
+    case 28:
+    {
+        if (whichNo == 1)
+        {
+            whichNo = 2;
+            op = 3;
+            LCD_send_data('x');
+        }
+        else if (whichNo == 2)
+        {
+            whichNo = 1;
+            no1 = 0, no2 = 0;
+            LCD_clear();
+            LCD_set_cursor(1, 1);
+            LCD_send_string("Error");
+        }
+        break;
+    }
+    case 31:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 1;
+        else
+            no2 = (no2 * 10) + 1;
+        LCD_send_data('1');
+        break;
+    }
+    case 32:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 2;
+        else
+            no2 = (no2 * 10) + 2;
+        LCD_send_data('2');
+        break;
+    }
+    case 34:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 3;
+        else
+            no2 = (no2 * 10) + 3;
+        LCD_send_data('3');
+        break;
+    }
+    case 38:
+    {
+        if (whichNo == 1)
+        {
+            whichNo = 2;
+            op = 2;
+            LCD_send_data('-');
+        }
+        else if (whichNo == 2)
+        {
+            whichNo = 1;
+            no1 = 0, no2 = 0;
+            LCD_clear();
+            LCD_set_cursor(1, 1);
+            LCD_send_string("Error");
+        }
+        break;
+    }
+    case 41:
+    {
+        whichNo = 1;
+        no1 = 0, no2 = 0;
+        LCD_clear();
+        LCD_set_cursor(1, 1);
+        break;
+    }
+    case 42:
+    {
+        if (whichNo == 1)
+            no1 = (no1 * 10) + 0;
+        else
+            no2 = (no2 * 10) + 0;
+        LCD_send_data('0');
+        break;
+    }
+    case 44:
+    {
+        switch (op)
+        {
+        case 1:
+        {
+            result = no1 + no2;
+            break;
+        }
+        case 2:
+        {
+            result = no1 - no2;
+            break;
+        }
+        case 3:
+        {
+            result = no1 * no2;
+            break;
+        }
+        case 4:
+        {
+            result = no1 / no2;
+            break;
+        }
+
+        default:
+        {
+            result = 0;
+            break;
+        }
+        }
+        LCD_clear();
+        LCD_set_cursor(1, 1);
+        LCD_print_int(result, 10);
+        no1 = result, no2 = 0;
+        whichNo = 1;
+        break;
+    }
+    case 48:
+    {
+        if (whichNo == 1)
+        {
+            whichNo = 2;
+            op = 1;
+            LCD_send_data('+');
+        }
+        else if (whichNo == 2)
+        {
+            whichNo = 1;
+            no1 = 0, no2 = 0;
+            LCD_clear();
+            LCD_set_cursor(1, 1);
+            LCD_send_string("Error");
+        }
+        break;
+    }
+
+    default:
+    {
+        break;
+    }
     }
 }
 
 void main()
 {
-    ADC_Interrupt_init(0);
-
     LCD_Init();
     LCD_set_cursor(1, 1);
-    LCD_send_string("Voltmeter");
-    LCD_set_cursor(2, 1);
+    // LCD_print_float(-32.453);
+
+    KeyPad_Init();
 
     while (1)
     {
-        __delay_ms(100);
-        LCD_set_cursor(2, 1);
-        LCD_print_int(adcVal, 10);
+        CalculatorProcess();
     }
 }
