@@ -11,7 +11,6 @@
 
 #include <xc.h>
 
-unsigned char flag = 0;
 
 void __interrupt() timer0Interrupt(void) // interrupt function
 {
