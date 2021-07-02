@@ -1,6 +1,6 @@
 # PICWorking
 
-Learning PIC18F452 Microcontroller for usage of Advanced Peripherals  (mainly USB).
+Learning PIC18F452 Microcontroller for usage of Advanced Peripherals (mainly USB).
 
 ## Details
 - **Compiler :** xc8
@@ -19,3 +19,4 @@ Learning PIC18F452 Microcontroller for usage of Advanced Peripherals  (mainly US
 6) LCD Display
 7) Voltmeter
 8) Calculator
+9) UART Communication

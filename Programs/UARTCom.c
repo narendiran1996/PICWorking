@@ -4,7 +4,7 @@
 #pragma config PWRT = OFF // Power UpTime Disbale (PWRT disabled)
 #pragma config BOR = ON   // Brown-out Reset (BOR enabled)
 #pragma config WDT = OFF  // Watch Dog timer disbaled
-#pragma config LVP OFF  // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
+#pragma config LVP = OFF  // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
 //END CONFIG
 
 #define _XTAL_FREQ 4000000L
@@ -44,7 +44,7 @@ void LCD_send_cmd(uint8_t cmd_)
     LCD_custom_delay(1);
     clear_En;
 }
-void LCD_send_data(uint8_t data_)
+void LCD_send_data(unsigned char data_)
 {
     LCD_set_MSB(data_);
     set_RS;
@@ -353,277 +353,90 @@ void LCD_print_float(float num)
     LCD_send_string(buff2);
 }
 
-void KeyPad_Init()
+void UART_TX_Init()
 {
-    TRISD = 0xF0;
+    SPBRG = 25;        // baudrate calculated based for BRGH = 1  using SPBRG = ((FOSC/baud)/16) - 1
+    TXSTA |= (1 << 2); // setting the BRGH for high baud rate
+
+    TXSTA &= ~(1 << 4); // clearing the SYNC bit for selecting the Asynchronous mode.
+
+    RCSTA |= (1 << 7); // setting the SPEN bit to enable serial port
+
+    TXSTA |= (1 << 5); // enabling the transmitter
 }
-unsigned char readKeyPad()
+
+void UART_TX_sendChar(char dataVal)
 {
-    unsigned char val = 0;
-
-    LATD = (LATD & 0xF0) | 0x01;
-    val = (PORTD & 0xF0) >> 4;
-    if (val != 0)
-        return 10 + val;
-
-    LATD = (LATD & 0xF0) | 0x02;
-    val = (PORTD & 0xF0) >> 4;
-    if (val != 0)
-        return 20 + val;
-
-    LATD = (LATD & 0xF0) | 0x04;
-    val = (PORTD & 0xF0) >> 4;
-    if (val != 0)
-        return 30 + val;
-
-    LATD = (LATD & 0xF0) | 0x08;
-    val = (PORTD & 0xF0) >> 4;
-    if (val != 0)
-        return 40 + val;
-
-    LATD = 0x00;
-    return val;
+    // checking the TRMT - tranmit shift register status bit - for empty or full
+    while ((TXSTA & (1 << 1)) == 0x0)
+    {
+    }
+    TXREG = dataVal;
 }
-int no1 = 0, no2 = 0;
-int result = 0;
-unsigned char whichNo = 1;
-unsigned char op = 0;
-void CalculatorProcess()
+void UART_TX_sendString(char *c_string)
 {
-    __delay_ms(180);
-    unsigned char val = readKeyPad();
-    switch (val)
+    while (*c_string != '\0')
     {
-    case 0:
-    {
-        break;
+        UART_TX_sendChar(*c_string++);
     }
-    case 11:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 7;
-        else
-            no2 = (no2 * 10) + 7;
-        LCD_send_data('7');
-        break;
-    }
-    case 12:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 8;
-        else
-            no2 = (no2 * 10) + 8;
-        LCD_send_data('8');
-        break;
-    }
-    case 14:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 9;
-        else
-            no2 = (no2 * 10) + 9;
-        LCD_send_data('9');
-        break;
-    }
-    case 18:
-    {
-        if (whichNo == 1)
-        {
-            whichNo = 2;
-            op = 4;
-            LCD_send_data('/');
-        }
-        else if (whichNo == 2)
-        {
-            whichNo = 1;
-            no1 = 0, no2 = 0;
-            LCD_clear();
-            LCD_set_cursor(1, 1);
-            LCD_send_string("Error");
-        }
-        break;
-    }
-    case 21:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 4;
-        else
-            no2 = (no2 * 10) + 4;
-        LCD_send_data('4');
-        break;
-    }
-    case 22:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 5;
-        else
-            no2 = (no2 * 10) + 5;
-        LCD_send_data('5');
-        break;
-    }
-    case 24:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 6;
-        else
-            no2 = (no2 * 10) + 6;
-        LCD_send_data('6');
-        break;
-    }
-    case 28:
-    {
-        if (whichNo == 1)
-        {
-            whichNo = 2;
-            op = 3;
-            LCD_send_data('x');
-        }
-        else if (whichNo == 2)
-        {
-            whichNo = 1;
-            no1 = 0, no2 = 0;
-            LCD_clear();
-            LCD_set_cursor(1, 1);
-            LCD_send_string("Error");
-        }
-        break;
-    }
-    case 31:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 1;
-        else
-            no2 = (no2 * 10) + 1;
-        LCD_send_data('1');
-        break;
-    }
-    case 32:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 2;
-        else
-            no2 = (no2 * 10) + 2;
-        LCD_send_data('2');
-        break;
-    }
-    case 34:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 3;
-        else
-            no2 = (no2 * 10) + 3;
-        LCD_send_data('3');
-        break;
-    }
-    case 38:
-    {
-        if (whichNo == 1)
-        {
-            whichNo = 2;
-            op = 2;
-            LCD_send_data('-');
-        }
-        else if (whichNo == 2)
-        {
-            whichNo = 1;
-            no1 = 0, no2 = 0;
-            LCD_clear();
-            LCD_set_cursor(1, 1);
-            LCD_send_string("Error");
-        }
-        break;
-    }
-    case 41:
-    {
-        whichNo = 1;
-        no1 = 0, no2 = 0;
-        LCD_clear();
-        LCD_set_cursor(1, 1);
-        break;
-    }
-    case 42:
-    {
-        if (whichNo == 1)
-            no1 = (no1 * 10) + 0;
-        else
-            no2 = (no2 * 10) + 0;
-        LCD_send_data('0');
-        break;
-    }
-    case 44:
-    {
-        switch (op)
-        {
-        case 1:
-        {
-            result = no1 + no2;
-            break;
-        }
-        case 2:
-        {
-            result = no1 - no2;
-            break;
-        }
-        case 3:
-        {
-            result = no1 * no2;
-            break;
-        }
-        case 4:
-        {
-            result = no1 / no2;
-            break;
-        }
+}
+void UART_RX_Init()
+{
+    SPBRG = 25;        // baudrate calculated based for BRGH = 1  using SPBRG = ((FOSC/baud)/16) - 1
+    TXSTA |= (1 << 2); // setting the BRGH for high baud rate
 
-        default:
-        {
-            result = 0;
-            break;
-        }
-        }
-        LCD_clear();
-        LCD_set_cursor(1, 1);
-        LCD_print_int(result, 10);
-        no1 = result, no2 = 0;
-        whichNo = 1;
-        break;
-    }
-    case 48:
-    {
-        if (whichNo == 1)
-        {
-            whichNo = 2;
-            op = 1;
-            LCD_send_data('+');
-        }
-        else if (whichNo == 2)
-        {
-            whichNo = 1;
-            no1 = 0, no2 = 0;
-            LCD_clear();
-            LCD_set_cursor(1, 1);
-            LCD_send_string("Error");
-        }
-        break;
-    }
+    TXSTA &= ~(1 << 4); // clearing the SYNC bit for selecting the Asynchronous mode.
 
-    default:
+    RCSTA |= (1 << 7); // setting the SPEN bit to enable serial port
+
+    PIE1 |= (1 << 5); // enable RCIE bit to enbale interrupt
+
+    RCSTA |= (1 << 4); // enabling the receiver
+
+    INTCON |= (1 << 7); //e nable global intterupt
+    INTCON |= (1 << 6); //e nable peripheral intterupt
+}
+unsigned char UART_RX_receiveChar()
+{
+    unsigned char rxChar;
+
+    // waiting for CREN bit
+    while ((PIR1 & (1 << 5)) == 0)
     {
-        break;
     }
+    rxChar = RCREG;
+    return rxChar;
+}
+char ptrToString[20];
+void UART_RX_receiveStringUntilNewLine()
+{
+
+    unsigned char i = 0;
+    unsigned char currentChar = UART_RX_receiveChar();
+
+    while (currentChar != '7')
+    {
+        ptrToString[i] = currentChar;
+        currentChar = UART_RX_receiveChar();
+        i++;
     }
+    ptrToString[i] = '\0';
 }
 
 void main()
 {
     LCD_Init();
     LCD_set_cursor(1, 1);
-    // LCD_print_float(-32.453);
 
-    KeyPad_Init();
-
+    // UART_TX_Init();
+    UART_RX_Init();
     while (1)
     {
-        CalculatorProcess();
+        UART_RX_receiveStringUntilNewLine();
+        LCD_set_cursor(1, 1);
+        // UART_TX_sendString("Working!\n\r");
+        LCD_send_string(ptrToString);
+        __delay_ms(100);
+        LCD_clear();
     }
 }
