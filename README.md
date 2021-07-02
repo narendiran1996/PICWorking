@@ -20,3 +20,4 @@ Learning PIC18F452 Microcontroller for usage of Advanced Peripherals (mainly USB
 7) Voltmeter
 8) Calculator
 9) UART Communication
+10) UART Calculator
