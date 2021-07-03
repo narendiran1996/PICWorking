@@ -21,3 +21,4 @@ Learning PIC18F452 Microcontroller for usage of Advanced Peripherals (mainly USB
 8) Calculator
 9) UART Communication
 10) UART Calculator
+11) SPI EEPROM Memory (25LC640)
