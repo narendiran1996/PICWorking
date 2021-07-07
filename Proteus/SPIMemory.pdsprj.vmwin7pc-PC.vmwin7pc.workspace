@@ -33,7 +33,7 @@
      <ITEM name="nItems">0</ITEM>
     </PROPERTIES>
    </POPUP>
-   <POPUP w="450" x="108" flags="00000023" y="170" h="250" pid="0" iid="3">
+   <POPUP w="475" x="108" flags="00000023" y="170" h="358" pid="0" iid="3">
     <PROPERTIES>
      <ITEM name="AutoEcho">0</ITEM>
      <ITEM name="HSplitter1Pos">125</ITEM>
@@ -129,7 +129,7 @@
      <ITEM name="HexMode">0</ITEM>
     </PROPERTIES>
    </POPUP>
-   <POPUP w="8" x="88" flags="0000000a" y="185" h="32" pid="1" iid="2">
+   <POPUP w="20" x="604" flags="0000800b" y="278" h="15" pid="1" iid="2">
     <PROPERTIES>
      <ITEM name="DataType">2</ITEM>
      <ITEM name="DispChars">Yes</ITEM>
