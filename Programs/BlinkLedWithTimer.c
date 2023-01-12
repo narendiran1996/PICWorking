@@ -34,7 +34,7 @@ void timer0Init()
     T0CON &= ~(1 << 1);
     T0CON &= ~(1 << 0);
 
-    T0CON &= ~(1 << 4); // presclar assigned
+    T0CON &= ~(1 << 3); // presclar assigned
 
     INTCON |= (1 << 5); // Timer0 interrupt enable
     INTCON |= (1 << 7); // Global Interrupt enable
